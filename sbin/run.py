@@ -65,18 +65,25 @@ while (not os.path.exists(outfile) or os.stat(outfile).st_size == 0):
 print("\nstart to read output")
 
 # todo: use notification instead of polling
-with open(outfile, 'r') as f:
+
+# http://stackoverflow.com/a/5420116/267998
+def follow(thefile):
+    thefile.seek(0,2)
     while True:
-        where = f.tell()
-        result = f.read()
+        line = thefile.readline()
+        if not line:
+            time.sleep(0.1)
+            continue
+        yield line
+
+with open(outfile, 'r') as f:
+    for result in follow(f):
         sys.stdout.write(result)
         m = re.search("^(OK|FAILED|ERROR)", result, re.MULTILINE)
         # break when OK, Failed or error
         if m:
             break
-        elif not result:
-            f.seek(where)
-        time.sleep(0.2)
+
 success = m.group(0)=="OK"
 
 if not success:
